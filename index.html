@@ -1100,6 +1100,16 @@
     .hidden {
       display: none !important;
     }
+
+    /* Spinner rotation */
+    .animate-spin {
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -1149,7 +1159,22 @@
     
     <!-- UPLOADER / INITIAL LOAD STATE -->
     <div id="loader-state" class="view-pane active">
-      <div class="uploader-card" id="drop-zone">
+      <!-- Loading screen (visible initially) -->
+      <div id="loading-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 1.5rem; text-align: center;">
+        <div style="position: relative; width: 4rem; height: 4rem;">
+          <div style="box-sizing: border-box; display: block; position: absolute; width: 4rem; height: 4rem; border: 4px solid var(--border-color); border-radius: 50%;"></div>
+          <div class="animate-spin" style="box-sizing: border-box; display: block; position: absolute; width: 4rem; height: 4rem; border: 4px solid transparent; border-top-color: var(--color-primary); border-radius: 50%;"></div>
+        </div>
+        <div>
+          <h2 style="font-size: 1.5rem; color: var(--text-primary);">Carregando Painel Geral</h2>
+          <p style="color: var(--text-secondary); margin-top: 0.5rem;" id="loading-status-text">
+            Por favor, aguarde enquanto carregamos os dados do Mete Marcha...
+          </p>
+        </div>
+      </div>
+
+      <!-- Uploader card (hidden initially, only shown if auto-load fails) -->
+      <div class="uploader-card hidden" id="drop-zone">
         <div class="uploader-icon">
           <i data-lucide="upload-cloud" style="width: 2rem; height: 2rem;"></i>
         </div>
@@ -1174,7 +1199,7 @@
         </div>
       </div>
       
-      <div id="auto-load-attempt" style="text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+      <div id="auto-load-attempt" class="hidden" style="text-align: center; color: var(--text-muted); font-size: 0.875rem; margin-top: 2rem;">
         <i data-lucide="loader" class="animate-spin" style="display: inline-block; vertical-align: middle; margin-right: 0.25rem;"></i>
         Tentando carregar 'planilha.csv' automaticamente da pasta local...
       </div>
@@ -3558,15 +3583,14 @@
 
       // Check if we have embedded data
       if (typeof embeddedCsvData !== 'undefined' && embeddedCsvData.length > 0) {
-        document.getElementById('auto-load-attempt').innerHTML = `
-          <span style="color: var(--color-selected);"><i data-lucide="check" style="display:inline-block; vertical-align:middle; width: 1.1rem;"></i> Dados da planilha pré-carregados!</span>
-        `;
-        lucide.createIcons();
-        
-        setTimeout(() => {
-          initializeWithEmbeddedData();
-        }, 500);
+        initializeWithEmbeddedData();
         return;
+      }
+
+      // Update loading status text to reflect auto-loading attempt
+      const loadingStatus = document.getElementById('loading-status-text');
+      if (loadingStatus) {
+        loadingStatus.textContent = "Tentando carregar 'planilha.csv' automaticamente...";
       }
 
       fetch('planilha.csv')
@@ -3577,20 +3601,27 @@
           return response.text();
         })
         .then(text => {
-          document.getElementById('auto-load-attempt').innerHTML = `
-            <span style="color: var(--color-selected);"><i data-lucide="check" style="display:inline-block; vertical-align:middle; width: 1.1rem;"></i> Planilha auto-carregada!</span>
-          `;
-          lucide.createIcons();
-          setTimeout(() => {
-            handleCSVText(text);
-          }, 800);
+          handleCSVText(text);
         })
         .catch(err => {
           console.warn("Auto load fetch failed (expected if double clicking file://):", err.message);
-          document.getElementById('auto-load-attempt').innerHTML = `
-            <span style="color: var(--text-muted);"><i data-lucide="alert-circle" style="display:inline-block; vertical-align:middle; width: 1rem;"></i> Sem auto-carregamento. Use a seleção manual acima (comum em arquivos locais).</span>
-          `;
-          lucide.createIcons();
+          
+          // Hide loading screen
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) loadingScreen.classList.add('hidden');
+          
+          // Show file uploader
+          const dropZone = document.getElementById('drop-zone');
+          if (dropZone) dropZone.classList.remove('hidden');
+          
+          const autoLoadAttempt = document.getElementById('auto-load-attempt');
+          if (autoLoadAttempt) {
+            autoLoadAttempt.classList.remove('hidden');
+            autoLoadAttempt.innerHTML = `
+              <span style="color: var(--text-muted);"><i data-lucide="alert-circle" style="display:inline-block; vertical-align:middle; width: 1rem;"></i> Sem auto-carregamento automático da planilha. Selecione manualmente o arquivo acima.</span>
+            `;
+            lucide.createIcons();
+          }
         });
     });
   </script>
