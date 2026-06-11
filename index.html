@@ -14,7 +14,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.1">
 </head>
 <body>
 
@@ -32,17 +32,17 @@
 
     <!-- Central Tabs Navigation -->
     <nav class="nav-tabs hidden" id="view-tabs">
-      <button class="tab-btn active" data-view="dashboard">
-        <i data-lucide="layout-grid"></i> Painel Geral
+      <button class="tab-btn" data-view="dashboard">
+        <i data-lucide="layout-grid"></i> <span>Painel Geral</span>
       </button>
-      <button class="tab-btn" data-view="continuous">
-        <i data-lucide="list"></i> Leitura Contínua
+      <button class="tab-btn active" data-view="continuous">
+        <i data-lucide="list"></i> <span>Leitura Contínua</span>
       </button>
       <button class="tab-btn" data-view="reader">
-        <i data-lucide="book-open"></i> Modo Foco
+        <i data-lucide="book-open"></i> <span>Modo Foco</span>
       </button>
       <button class="tab-btn" data-view="reports">
-        <i data-lucide="bar-chart-2"></i> Relatórios & Dados
+        <i data-lucide="bar-chart-2"></i> <span>Relatórios & Dados</span>
       </button>
     </nav>
 
@@ -157,63 +157,71 @@
         </div>
       </section>
 
+      <!-- Shared Filters Panel -->
+      <div class="filter-panel hidden">
+        <!-- Mobile Toggle Button (hidden on desktop) -->
+        <button class="filter-mobile-toggle" id="btn-filter-toggle">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="sliders-horizontal" style="width: 1rem; height: 1rem;"></i>
+            <span>Filtrar & Ordenar</span>
+          </div>
+          <span class="filter-count-badge hidden" id="filter-active-count">0</span>
+        </button>
+
+        <div class="filter-grid" id="filter-grid-container">
+          
+          <div class="filter-group">
+            <label for="filter-search">Busca Global</label>
+            <div class="search-wrapper">
+              <i data-lucide="search"></i>
+              <input type="text" id="filter-search" class="search-input" placeholder="Buscar por startup, ideia, founder...">
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label for="filter-sector">Setor</label>
+            <select id="filter-sector" class="filter-select">
+              <option value="all">Todos os setores</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filter-stage">Fase da Startup</label>
+            <select id="filter-stage" class="filter-select">
+              <option value="all">Todas as fases</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filter-status">Status de Avaliação</label>
+            <select id="filter-status" class="filter-select">
+              <option value="all">Todos os status</option>
+              <option value="pending">Pendentes</option>
+              <option value="selecionada">Selecionadas</option>
+              <option value="espera">Em Espera</option>
+              <option value="desclassificada">Desclassificadas</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="sort-by">Ordenar Por</label>
+            <select id="sort-by" class="filter-select">
+              <option value="index-asc">Ordem da Planilha</option>
+              <option value="name-asc">Nome da Startup (A-Z)</option>
+              <option value="sector-asc">Setor (A-Z)</option>
+              <option value="status-asc">Status de Avaliação</option>
+            </select>
+          </div>
+
+          <button class="reset-filters-btn" id="btn-reset-filters">
+            <i data-lucide="rotate-ccw"></i> Limpar Filtros
+          </button>
+
+        </div>
+      </div>
+
       <!-- VIEW 1: DASHBOARD -->
       <section id="view-dashboard" class="view-pane">
-        
-        <!-- Filters Panel -->
-        <div class="filter-panel">
-          <div class="filter-grid">
-            
-            <div class="filter-group">
-              <label for="filter-search">Busca Global</label>
-              <div class="search-wrapper">
-                <i data-lucide="search"></i>
-                <input type="text" id="filter-search" class="search-input" placeholder="Buscar por startup, ideia, founder...">
-              </div>
-            </div>
-
-            <div class="filter-group">
-              <label for="filter-sector">Setor</label>
-              <select id="filter-sector" class="filter-select">
-                <option value="all">Todos os setores</option>
-              </select>
-            </div>
-
-            <div class="filter-group">
-              <label for="filter-stage">Fase da Startup</label>
-              <select id="filter-stage" class="filter-select">
-                <option value="all">Todas as fases</option>
-              </select>
-            </div>
-
-            <div class="filter-group">
-              <label for="filter-status">Status de Avaliação</label>
-              <select id="filter-status" class="filter-select">
-                <option value="all">Todos os status</option>
-                <option value="pending">Pendentes</option>
-                <option value="selecionada">Selecionadas</option>
-                <option value="espera">Em Espera</option>
-                <option value="desclassificada">Desclassificadas</option>
-              </select>
-            </div>
-
-            <div class="filter-group">
-              <label for="sort-by">Ordenar Por</label>
-              <select id="sort-by" class="filter-select">
-                <option value="index-asc">Ordem da Planilha</option>
-                <option value="name-asc">Nome da Startup (A-Z)</option>
-                <option value="sector-asc">Setor (A-Z)</option>
-                <option value="status-asc">Status de Avaliação</option>
-              </select>
-            </div>
-
-            <button class="reset-filters-btn" id="btn-reset-filters">
-              <i data-lucide="rotate-ccw"></i> Limpar Filtros
-            </button>
-
-          </div>
-        </div>
-
         <!-- Startups Grid -->
         <div class="ideas-grid" id="ideas-grid-container">
           <!-- Populated dynamically via JS -->

@@ -1,4 +1,4 @@
-﻿// State management
+// State management
 const embeddedHeaders = [
   "Já teve alguma experiência empreendedora (empresas ou startups)? ",
   "\"Eu, founder, declaro que tenho pelo menos 3 horas por semana durante 3 meses para me dedicar ao Mete Marcha\"",
@@ -886,7 +886,7 @@ const embeddedCsvData = [
 let csvData = [...embeddedCsvData];        // Parsed CSV records
 let headers = [...embeddedHeaders];        // CSV Headers
 let evaluations = {};    // { ideaKey: { status: 'selecionada'|'espera'|'desclassificada'|null, comments: '...' } }
-let activeView = 'dashboard';
+let activeView = 'continuous';
 let activeIdeaIndex = 0; // For focused reader mode
 let filteredIdeas = [];  // Current filtered records for rendering
 let sectorsList = [];    // Unique sectors
@@ -1000,7 +1000,7 @@ function initializeWithEmbeddedData() {
   document.getElementById('view-tabs').classList.remove('hidden');
   document.getElementById('global-export-btn').classList.remove('hidden');
   
-  activeView = 'dashboard';
+  activeView = 'continuous';
   showView(activeView);
   
   showToast(`Carregado: ${csvData.length} ideias carregadas com sucesso!`, 'success');
@@ -1056,7 +1056,7 @@ function initializeData(parsedLines) {
   document.getElementById('view-tabs').classList.remove('hidden');
   document.getElementById('global-export-btn').classList.remove('hidden');
   
-  activeView = 'dashboard';
+  activeView = 'continuous';
   showView(activeView);
   
   showToast(`Carregado: ${csvData.length} ideias importadas com sucesso!`, 'success');
@@ -1204,6 +1204,24 @@ function applyFilters() {
   const stageVal = document.getElementById('filter-stage').value;
   const statusVal = document.getElementById('filter-status').value;
   const sortVal = document.getElementById('sort-by').value;
+
+  // Update mobile active filter badge count
+  let activeFilterCount = 0;
+  if (searchVal.trim() !== '') activeFilterCount++;
+  if (sectorVal !== 'all') activeFilterCount++;
+  if (stageVal !== 'all') activeFilterCount++;
+  if (statusVal !== 'all') activeFilterCount++;
+  if (sortVal !== 'index-asc') activeFilterCount++;
+
+  const countBadge = document.getElementById('filter-active-count');
+  if (countBadge) {
+    if (activeFilterCount > 0) {
+      countBadge.textContent = activeFilterCount;
+      countBadge.classList.remove('hidden');
+    } else {
+      countBadge.classList.add('hidden');
+    }
+  }
 
   filteredIdeas = csvData.filter(item => {
     // Sector filter
@@ -1825,6 +1843,16 @@ function showView(viewName) {
     targetPane.classList.add('active');
   }
 
+  // Update filter panel visibility
+  const filterPanel = document.querySelector('.filter-panel');
+  if (filterPanel) {
+    if (viewName === 'dashboard' || viewName === 'continuous') {
+      filterPanel.classList.remove('hidden');
+    } else {
+      filterPanel.classList.add('hidden');
+    }
+  }
+
   // Rerender contents for the specific view
   if (viewName === 'dashboard') {
     renderDashboardGrid();
@@ -1835,6 +1863,16 @@ function showView(viewName) {
   } else if (viewName === 'reports') {
     renderReportsView();
   }
+}
+
+// Mobile collapsible filters toggle logic
+const btnFilterToggle = document.getElementById('btn-filter-toggle');
+const filterGridContainer = document.getElementById('filter-grid-container');
+if (btnFilterToggle && filterGridContainer) {
+  btnFilterToggle.addEventListener('click', () => {
+    filterGridContainer.classList.toggle('show-filters');
+    btnFilterToggle.classList.toggle('expanded');
+  });
 }
 
 // Hook tab switches
