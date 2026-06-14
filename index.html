@@ -30,7 +30,6 @@
       </div>
     </div>
 
-    <!-- Central Tabs Navigation -->
     <nav class="nav-tabs hidden" id="view-tabs">
       <button class="tab-btn" data-view="dashboard">
         <i data-lucide="layout-grid"></i> <span>Painel Geral</span>
@@ -40,6 +39,9 @@
       </button>
       <button class="tab-btn" data-view="reader">
         <i data-lucide="book-open"></i> <span>Modo Foco</span>
+      </button>
+      <button class="tab-btn" data-view="saved">
+        <i data-lucide="bookmark"></i> <span>Ideias Salvas</span>
       </button>
       <button class="tab-btn" data-view="reports">
         <i data-lucide="bar-chart-2"></i> <span>Relatórios & Dados</span>
@@ -228,6 +230,14 @@
         </div>
       </section>
 
+      <!-- VIEW 5: SAVED IDEAS -->
+      <section id="view-saved" class="view-pane">
+        <!-- Startups Grid for Saved Ideas -->
+        <div class="ideas-grid" id="saved-ideas-grid-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+
       <!-- VIEW 2: CONTINUOUS VIEW (PAGE BY PAGE SCROLLING) -->
       <section id="view-continuous" class="view-pane">
         <div class="continuous-list" id="continuous-list-container">
@@ -367,7 +377,12 @@
       <div class="modal-header">
         <div class="modal-header-info">
           <div class="card-badges" id="modal-badges"></div>
-          <h2 class="modal-title" id="modal-title">Nome da Startup</h2>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h2 class="modal-title" id="modal-title">Nome da Startup</h2>
+            <button class="btn-save-bookmark" id="modal-save-btn" title="Salvar ideia">
+              <i data-lucide="bookmark" style="width: 1.4rem; height: 1.4rem;"></i>
+            </button>
+          </div>
         </div>
         <button class="modal-close" id="modal-close-btn">
           <i data-lucide="x" style="width: 1.5rem; height: 1.5rem;"></i>
@@ -385,6 +400,11 @@
           <div class="info-section">
             <h4><i data-lucide="star" style="width: 1rem; height: 1rem;"></i> Por que fazer parte do Mete Marcha?</h4>
             <p id="modal-motivation">Motivação...</p>
+          </div>
+
+          <div class="info-section">
+            <h4><i data-lucide="trending-up" style="width: 1rem; height: 1rem;"></i> Fase da Startup</h4>
+            <p id="modal-stage">Fase...</p>
           </div>
 
           <div class="info-section">

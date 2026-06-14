@@ -1140,6 +1140,63 @@ function updateIdeaEvaluation(ideaKey, status, comments) {
   });
 }
 
+// Save idea toggle and UI update
+function toggleSaveIdea(ideaKey) {
+  if (!evaluations[ideaKey]) {
+    evaluations[ideaKey] = { status: null, comments: '', saved: false };
+  }
+  
+  const isSavedNow = !evaluations[ideaKey].saved;
+  evaluations[ideaKey].saved = isSavedNow;
+  
+  saveEvaluations();
+  updateSaveUI(ideaKey, isSavedNow);
+  
+  if (activeView === 'saved') {
+    applyFilters(); // Rerender saved ideas list
+  }
+  
+  if (isSavedNow) {
+    showToast("Ideia salva nos favoritos!", "success");
+  } else {
+    showToast("Ideia removida dos favoritos.", "info");
+  }
+}
+
+function updateSaveUI(ideaKey, isSavedNow) {
+  const bookmarkBtns = document.querySelectorAll(`.btn-save-bookmark[data-save-key="${ideaKey}"]`);
+  bookmarkBtns.forEach(btn => {
+    if (isSavedNow) {
+      btn.classList.add('is-saved');
+    } else {
+      btn.classList.remove('is-saved');
+    }
+  });
+  
+  if (modalItemKey === ideaKey) {
+    const modalSaveBtn = document.getElementById('modal-save-btn');
+    if (modalSaveBtn) {
+      if (isSavedNow) {
+        modalSaveBtn.classList.add('is-saved');
+      } else {
+        modalSaveBtn.classList.remove('is-saved');
+      }
+    }
+  }
+  
+  const readerSaveBtn = document.getElementById('reader-save-btn');
+  if (readerSaveBtn && filteredIdeas.length > 0) {
+    const currentItem = filteredIdeas[activeIdeaIndex];
+    if (getIdeaKey(currentItem) === ideaKey) {
+      if (isSavedNow) {
+        readerSaveBtn.classList.add('is-saved');
+      } else {
+        readerSaveBtn.classList.remove('is-saved');
+      }
+    }
+  }
+}
+
 // Dropdowns populator
 function populateFilters() {
   const sectorSelect = document.getElementById('filter-sector');
@@ -1224,6 +1281,11 @@ function applyFilters() {
   }
 
   filteredIdeas = csvData.filter(item => {
+    const key = getIdeaKey(item);
+    
+    // If we are in saved ideas view, only show saved items
+    if (activeView === 'saved' && evaluations[key]?.saved !== true) return false;
+
     // Sector filter
     if (sectorVal !== 'all' && item.row[COL_SECTOR] !== sectorVal) return false;
     
@@ -1231,7 +1293,6 @@ function applyFilters() {
     if (stageVal !== 'all' && item.row[COL_STAGE] !== stageVal) return false;
     
     // Status filter
-    const key = getIdeaKey(item);
     const status = evaluations[key]?.status;
     if (statusVal !== 'all') {
       if (statusVal === 'pending' && status) return false;
@@ -1282,6 +1343,8 @@ function applyFilters() {
   // Render active view based on activeView state
   if (activeView === 'dashboard') {
     renderDashboardGrid();
+  } else if (activeView === 'saved') {
+    renderSavedIdeasGrid();
   } else if (activeView === 'continuous') {
     renderContinuousList();
   } else if (activeView === 'reader') {
@@ -1338,7 +1401,12 @@ function renderDashboardGrid() {
     
     card.innerHTML = `
       <div class="card-header-meta">
-        <span class="card-index">Linha #${item.originalIndex}</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button class="btn-save-bookmark ${evalState?.saved ? 'is-saved' : ''}" data-save-key="${key}" title="Salvar ideia">
+            <i data-lucide="bookmark" style="width: 1.1rem; height: 1.1rem;"></i>
+          </button>
+          <span class="card-index">Linha #${item.originalIndex}</span>
+        </div>
         <div class="card-badges">
           <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
           <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
@@ -1361,6 +1429,95 @@ function renderDashboardGrid() {
         </div>
       </div>
     `;
+
+    // Click event on save button
+    const saveBtn = card.querySelector('.btn-save-bookmark');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSaveIdea(key);
+      });
+    }
+
+    // Click event opens details modal
+    card.addEventListener('click', () => {
+      openDetailModal(item);
+    });
+
+    container.appendChild(card);
+  });
+
+  lucide.createIcons();
+}
+
+// Render VIEW 5: Saved Ideas Grid
+function renderSavedIdeasGrid() {
+  const container = document.getElementById('saved-ideas-grid-container');
+  container.innerHTML = '';
+
+  if (filteredIdeas.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--text-secondary);">
+        <i data-lucide="bookmark" style="width: 3rem; height: 3rem; color: var(--text-muted); margin-bottom: 1rem; display: inline-block;"></i>
+        <h3>Nenhuma ideia salva encontrada com os filtros selecionados.</h3>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem;">Para salvar ideias, clique no ícone de marcador nas ideias do Painel Geral ou do Modo Foco.</p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  filteredIdeas.forEach(item => {
+    const key = getIdeaKey(item);
+    const evalState = evaluations[key];
+    const status = evalState?.status;
+    const comments = evalState?.comments || '';
+    const hasComment = comments.trim() !== '';
+
+    const card = document.createElement('div');
+    card.className = `idea-card status-${status || 'pendente'}`;
+    card.setAttribute('data-key', key);
+    card.setAttribute('data-index', item.originalIndex);
+    
+    card.innerHTML = `
+      <div class="card-header-meta">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button class="btn-save-bookmark ${evalState?.saved ? 'is-saved' : ''}" data-save-key="${key}" title="Salvar ideia">
+            <i data-lucide="bookmark" style="width: 1.1rem; height: 1.1rem;"></i>
+          </button>
+          <span class="card-index">Linha #${item.originalIndex}</span>
+        </div>
+        <div class="card-badges">
+          <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
+          <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
+          ${getStatusBadgeHTML(status)}
+        </div>
+      </div>
+      
+      <h3>${getStartupDisplayName(item)}</h3>
+      <p class="card-solution-preview">${item.row[COL_SOLUTION] || '(Sem descrição da solução)'}</p>
+      
+      <div class="card-footer">
+        <div class="card-experience" title="${item.row[COL_EXP]}">
+          <i data-lucide="user" style="width: 0.75rem; height: 0.75rem; flex-shrink: 0;"></i>
+          <span>${item.row[COL_EXP] || 'Sem histórico'}</span>
+        </div>
+        
+        <div class="card-comment-indicator ${hasComment ? '' : 'hidden'}">
+          <i data-lucide="message-square" style="width: 0.8rem; height: 0.8rem;"></i>
+          <span>Anotado</span>
+        </div>
+      </div>
+    `;
+
+    // Click event on save button
+    const saveBtn = card.querySelector('.btn-save-bookmark');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSaveIdea(key);
+      });
+    }
 
     // Click event opens details modal
     card.addEventListener('click', () => {
@@ -1402,7 +1559,12 @@ function renderContinuousList() {
     wrapper.innerHTML = `
       <div class="continuous-header">
         <div class="continuous-header-details">
-          <h3>${getStartupDisplayName(item)}</h3>
+          <h3 style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            ${getStartupDisplayName(item)}
+            <button class="btn-save-bookmark ${evalState?.saved ? 'is-saved' : ''}" data-save-key="${key}" title="Salvar ideia">
+              <i data-lucide="bookmark" style="width: 1.25rem; height: 1.25rem;"></i>
+            </button>
+          </h3>
           <div class="card-badges">
             <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
             <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
@@ -1424,6 +1586,10 @@ function renderContinuousList() {
           <div class="info-section">
             <h4><i data-lucide="star" style="width: 1rem; height: 1rem;"></i> Por que fazer parte do Mete Marcha?</h4>
             <p>${item.row[COL_MOTIVATION] || '(Nenhuma justificativa fornecida)'}</p>
+          </div>
+          <div class="info-section">
+            <h4><i data-lucide="trending-up" style="width: 1rem; height: 1rem;"></i> Fase da Startup</h4>
+            <p>${item.row[COL_STAGE] || 'Não informada'}</p>
           </div>
           <div class="info-section">
             <h4><i data-lucide="briefcase" style="width: 1rem; height: 1rem;"></i> Experiência Empreendedora</h4>
@@ -1479,6 +1645,11 @@ function renderContinuousList() {
         
         updateIdeaEvaluation(key, newStatus, undefined);
       });
+    });
+
+    const saveBtn = wrapper.querySelector('.btn-save-bookmark');
+    saveBtn.addEventListener('click', () => {
+      toggleSaveIdea(key);
     });
 
     // Comment input autosave
@@ -1539,7 +1710,12 @@ function renderReaderView() {
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
         <div>
           <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Avaliando Ideia ${activeIdeaIndex + 1} de ${filteredIdeas.length} (Linha #${item.originalIndex})</span>
-          <h2 style="font-size: 1.8rem; margin-top: 0.25rem; color: var(--text-primary);">${getStartupDisplayName(item)}</h2>
+          <h2 style="font-size: 1.8rem; margin-top: 0.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            ${getStartupDisplayName(item)}
+            <button class="btn-save-bookmark ${evalState?.saved ? 'is-saved' : ''}" id="reader-save-btn" title="Salvar ideia">
+              <i data-lucide="bookmark" style="width: 1.4rem; height: 1.4rem;"></i>
+            </button>
+          </h2>
         </div>
         <div class="card-badges">
           <span class="badge badge-sector" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">${item.row[COL_SECTOR] || 'Outra'}</span>
@@ -1559,7 +1735,11 @@ function renderReaderView() {
           <p style="font-size: 1.05rem; line-height: 1.7;">${item.row[COL_MOTIVATION] || '(Sem justificativa fornecida)'}</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div class="info-section">
+            <h4><i data-lucide="trending-up" style="width: 1rem; height: 1rem;"></i> Fase da Startup</h4>
+            <p style="font-size: 0.9rem;">${item.row[COL_STAGE] || 'Não informada.'}</p>
+          </div>
           <div class="info-section">
             <h4><i data-lucide="briefcase" style="width: 1rem; height: 1rem;"></i> Experiência Empreendedora</h4>
             <p style="font-size: 0.9rem;">${item.row[COL_EXP] || 'Sem histórico anterior.'}</p>
@@ -1590,6 +1770,7 @@ function renderReaderView() {
   // Next / Prev actions
   document.getElementById('reader-prev-btn')?.addEventListener('click', () => navigateReader(-1));
   document.getElementById('reader-next-btn')?.addEventListener('click', () => navigateReader(1));
+  document.getElementById('reader-save-btn')?.addEventListener('click', () => toggleSaveIdea(key));
 
   lucide.createIcons();
 }
@@ -1715,8 +1896,15 @@ function openDetailModal(item) {
   document.getElementById('modal-title').textContent = getStartupDisplayName(item);
   document.getElementById('modal-solution').textContent = item.row[COL_SOLUTION] || '(Sem descrição)';
   document.getElementById('modal-motivation').textContent = item.row[COL_MOTIVATION] || '(Sem descrição)';
+  document.getElementById('modal-stage').textContent = item.row[COL_STAGE] || '(Sem fase informada)';
   document.getElementById('modal-experience').textContent = item.row[COL_EXP] || '(Sem descrição)';
   
+  const isSaved = evalState?.saved === true;
+  const modalSaveBtn = document.getElementById('modal-save-btn');
+  if (modalSaveBtn) {
+    modalSaveBtn.className = `btn-save-bookmark ${isSaved ? 'is-saved' : ''}`;
+  }
+
   const suggestions = item.row[COL_SUGGESTIONS];
   const suggSection = document.getElementById('modal-suggestions-section');
   if (suggestions && suggestions.trim()) {
@@ -1824,6 +2012,9 @@ document.getElementById('reader-comment').addEventListener('input', (e) => {
 function showView(viewName) {
   activeView = viewName;
   
+  // Reapply filters to correctly segment ideas (e.g. filter only saved ones if the saved tab is selected)
+  applyFilters();
+  
   // Update tabs links active
   document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.getAttribute('data-view') === viewName) {
@@ -1846,21 +2037,15 @@ function showView(viewName) {
   // Update filter panel visibility
   const filterPanel = document.querySelector('.filter-panel');
   if (filterPanel) {
-    if (viewName === 'dashboard' || viewName === 'continuous') {
+    if (viewName === 'dashboard' || viewName === 'continuous' || viewName === 'saved') {
       filterPanel.classList.remove('hidden');
     } else {
       filterPanel.classList.add('hidden');
     }
   }
 
-  // Rerender contents for the specific view
-  if (viewName === 'dashboard') {
-    renderDashboardGrid();
-  } else if (viewName === 'continuous') {
-    renderContinuousList();
-  } else if (viewName === 'reader') {
-    renderReaderView();
-  } else if (viewName === 'reports') {
+  // Rerender contents for report view (others are triggered by applyFilters())
+  if (viewName === 'reports') {
     renderReportsView();
   }
 }
@@ -1902,6 +2087,11 @@ document.getElementById('btn-reset-filters').addEventListener('click', () => {
 
 // Modal Close handlers
 document.getElementById('modal-close-btn').addEventListener('click', closeDetailModal);
+document.getElementById('modal-save-btn')?.addEventListener('click', () => {
+  if (modalItemKey) {
+    toggleSaveIdea(modalItemKey);
+  }
+});
 document.getElementById('detail-modal').addEventListener('click', (e) => {
   if (e.target.id === 'detail-modal') {
     closeDetailModal();
