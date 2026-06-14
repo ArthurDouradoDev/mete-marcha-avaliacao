@@ -1,5 +1,6 @@
 // State management
 const embeddedHeaders = [
+  "Nome completo",
   "Já teve alguma experiência empreendedora (empresas ou startups)? ",
   "\"Eu, founder, declaro que tenho pelo menos 3 horas por semana durante 3 meses para me dedicar ao Mete Marcha\"",
   "Nome da startup (se tiver)",
@@ -8,6 +9,77 @@ const embeddedHeaders = [
   "Tem alguma ideia de solução? Se sim, qual(is)?",
   "Por que você e sua ideia devem fazer parte do Mete Marcha?",
   "Alguma dúvida, reclamação ou sugestão?"
+];
+
+// Founder names mapped to embeddedCsvData by index
+const embeddedFounderNames = [
+  "valentina vesari",
+  "Telma Regina de Oliveira Corte",
+  "Eyshila de Souza Pereira",
+  "Sophia Reis Santana",
+  "Pedro Xavier Rodrigues Sant'Ana",
+  "Arthur Galvão Coutinho",
+  "Vânia Laime Mamani",
+  "Sandra Oseas",
+  "Fernando Obata Mazzeo",
+  "João Henrique Silva de Oliveira",
+  "Suelen Aparecida Martins",
+  "Lucas de Camargo Basseto Alves",
+  "Talita de Souza",
+  "Guilherme Tosi",
+  "Raul Paes de Barros Belieiro",
+  "Martha Aguiar de Barros Nunes",
+  "Leandro Dri Manfiolete Troncoso",
+  "Gregório Denadai Schmidt",
+  "Andre Motta  Corrêa",
+  "Alberto Kitanda Marcelino",
+  "João Victor Cirto Martins",
+  "Fabíola Pacello Salmeron",
+  "Eliseu Fernando António Equele",
+  "Carlos Cabombo do Nascimento Miguel",
+  "Bruno de Oliveira Neves",
+  "Adriana Santos de Oliveira",
+  "Amílcar Ernesto António José",
+  "Rachel Beatriz Aloma Vieira",
+  "Laura Mattos de Arruda Campos",
+  "Roberta faria da silva feitosa",
+  "Guilherme Pego dos Santos",
+  "Paulo Honorato Lisbôa",
+  "Rwrsilany Silva",
+  "Maria Beatriz Segatti Piedade",
+  "Willian Cesar Ramos",
+  "Vinicius Lima Lustoza",
+  "Amanda Augusta Fernandes",
+  "Antonius Alexandre Dorta Soares",
+  "Matheus Ferreira de Argollo Gusman",
+  "Faria Cusseta Samuel Francisco",
+  "Mayara Amaral dos Santos",
+  "Murilo Oliveira da Silva",
+  "Ana Carolina Ferreira Barbara",
+  "Venice Roberto Clemente",
+  "Leonardo Parreira Xelegati",
+  "João Pedro Passos Facioli",
+  "Eduardo Alexandre Moura de Lima Oliveira",
+  "Amir Reza Emadifard",
+  "Ana Claudia Fattori",
+  "Viviane Romanos Martins",
+  "Sergio Bonini",
+  "ANA CAROLINA FERREIRA BARBARA",
+  "Ana cCarolina Prado Ricciardi",
+  "Daniel Nogueira",
+  "José Willame Leite De Sousa Filho",
+  "Flávia Regina Binati de Oliveira",
+  "Mateus Machado Frigo",
+  "Tomásio Eduardo Januário",
+  "Marcela Mobiglia D Agostini",
+  "Rafaela Almeida Ramos",
+  "Aleff dos Santos Rodrigues",
+  "Dave Ronel",
+  "Raphael Melo Gomes",
+  "Débora Freitas Melo",
+  "Juliano Nardelli Sasaki",
+  "Jéssica Raidislaine Marcolino do Nascimento",
+  "Rayssa Gomes Vieira"
 ];
 const embeddedCsvData = [
   {
@@ -892,16 +964,19 @@ let filteredIdeas = [];  // Current filtered records for rendering
 let sectorsList = [];    // Unique sectors
 let stagesList = [];     // Unique stages
 let saveTimeout = null;
+let completionShown = false; // Track if the completion overlay was already shown
+let hasFounderNameColumn = true; // Whether the CSV has a "Nome completo" column
 
-// Mapping fields by column index
-const COL_EXP = 0;
-const COL_DEDICATION = 1;
-const COL_NAME = 2;
-const COL_STAGE = 3;
-const COL_SECTOR = 4;
-const COL_SOLUTION = 5;
-const COL_MOTIVATION = 6;
-const COL_SUGGESTIONS = 7;
+// Dynamic column getters (handle both old and new CSV format)
+function colFounder() { return hasFounderNameColumn ? 0 : -1; }
+function colExp() { return hasFounderNameColumn ? 1 : 0; }
+function colDedication() { return hasFounderNameColumn ? 2 : 1; }
+function colName() { return hasFounderNameColumn ? 3 : 2; }
+function colStage() { return hasFounderNameColumn ? 4 : 3; }
+function colSector() { return hasFounderNameColumn ? 5 : 4; }
+function colSolution() { return hasFounderNameColumn ? 6 : 5; }
+function colMotivation() { return hasFounderNameColumn ? 7 : 6; }
+function colSuggestions() { return hasFounderNameColumn ? 8 : 7; }
 
 // Toast helper
 function showToast(text, type = 'success') {
@@ -965,8 +1040,16 @@ function parseCSV(text) {
 
 // Initialize application when data is pre-embedded
 function initializeWithEmbeddedData() {
-  csvData = [...embeddedCsvData];
+  // Inject founder names into embedded data rows
+  csvData = embeddedCsvData.map((item, idx) => {
+    const founderName = embeddedFounderNames[idx] || '';
+    return {
+      originalIndex: item.originalIndex,
+      row: [founderName, ...item.row]
+    };
+  });
   headers = [...embeddedHeaders];
+  hasFounderNameColumn = true;
 
   // Load comments and evaluations from LocalStorage
   loadEvaluations();
@@ -976,8 +1059,8 @@ function initializeWithEmbeddedData() {
   const stagesSet = new Set();
   
   csvData.forEach(item => {
-    const sector = item.row[COL_SECTOR];
-    const stage = item.row[COL_STAGE];
+    const sector = item.row[colSector()];
+    const stage = item.row[colStage()];
     if (sector && sector.trim()) sectorsSet.add(sector.trim());
     if (stage && stage.trim()) stagesSet.add(stage.trim());
   });
@@ -998,7 +1081,7 @@ function initializeWithEmbeddedData() {
   document.getElementById('loader-state').classList.add('hidden');
   document.getElementById('app-wrapper').classList.remove('hidden');
   document.getElementById('view-tabs').classList.remove('hidden');
-  document.getElementById('global-export-btn').classList.remove('hidden');
+  updateExportVisibility();
   
   activeView = 'continuous';
   showView(activeView);
@@ -1016,13 +1099,17 @@ function initializeData(parsedLines) {
 
   headers = parsedLines[0];
   
+  // Detect if CSV has founder name column
+  const firstHeader = (headers[0] || '').trim().toLowerCase();
+  hasFounderNameColumn = firstHeader.includes('nome') && firstHeader.includes('completo');
+  
   // Filter out headers, empty rows and store items with their original index
   csvData = parsedLines.slice(1)
     .map((row, idx) => ({
       originalIndex: idx + 1, // Store original spreadsheet line number
       row: row
     }))
-    .filter(item => item.row.length > 2 && item.row[COL_SOLUTION] && item.row[COL_SOLUTION].trim() !== "");
+    .filter(item => item.row.length > 2 && item.row[colSolution()] && item.row[colSolution()].trim() !== "");
 
   // Load comments and evaluations from LocalStorage
   loadEvaluations();
@@ -1032,8 +1119,8 @@ function initializeData(parsedLines) {
   const stagesSet = new Set();
   
   csvData.forEach(item => {
-    const sector = item.row[COL_SECTOR];
-    const stage = item.row[COL_STAGE];
+    const sector = item.row[colSector()];
+    const stage = item.row[colStage()];
     if (sector && sector.trim()) sectorsSet.add(sector.trim());
     if (stage && stage.trim()) stagesSet.add(stage.trim());
   });
@@ -1054,7 +1141,7 @@ function initializeData(parsedLines) {
   document.getElementById('loader-state').classList.add('hidden');
   document.getElementById('app-wrapper').classList.remove('hidden');
   document.getElementById('view-tabs').classList.remove('hidden');
-  document.getElementById('global-export-btn').classList.remove('hidden');
+  updateExportVisibility();
   
   activeView = 'continuous';
   showView(activeView);
@@ -1066,8 +1153,8 @@ function initializeData(parsedLines) {
 // Generate unique identifier for an idea row to robustly bind evaluations
 function getIdeaKey(item) {
   // Use startup name if present, combined with solution content details to ensure uniqueness
-  const name = item.row[COL_NAME] ? item.row[COL_NAME].trim() : '';
-  const solSnippet = item.row[COL_SOLUTION] ? item.row[COL_SOLUTION].substring(0, 30).replace(/\s+/g, '') : '';
+  const name = item.row[colName()] ? item.row[colName()].trim() : '';
+  const solSnippet = item.row[colSolution()] ? item.row[colSolution()].substring(0, 30).replace(/\s+/g, '') : '';
   return `${name}_${item.originalIndex}_${solSnippet}`;
 }
 
@@ -1098,6 +1185,8 @@ function saveEvaluations() {
   
   // Dynamic updates
   updateKPIs();
+  updateExportVisibility();
+  checkAllCategorized();
 }
 
 function updateIdeaEvaluation(ideaKey, status, comments) {
@@ -1254,6 +1343,92 @@ function updateKPIs() {
   document.getElementById('stat-progress-bar').style.width = `${progress}%`;
 }
 
+// Check if all ideas have a status (categorized) and show completion overlay
+function areAllCategorized() {
+  if (csvData.length === 0) return false;
+  return csvData.every(item => {
+    const key = getIdeaKey(item);
+    return evaluations[key]?.status != null;
+  });
+}
+
+function updateExportVisibility() {
+  const allDone = areAllCategorized();
+  
+  // Count remaining pending ideas
+  let pendingCount = 0;
+  csvData.forEach(item => {
+    const key = getIdeaKey(item);
+    if (!evaluations[key]?.status) {
+      pendingCount++;
+    }
+  });
+  
+  // Global Export Button in Header
+  const exportBtn = document.getElementById('global-export-btn');
+  if (exportBtn) {
+    if (allDone) {
+      exportBtn.classList.remove('hidden');
+    } else {
+      exportBtn.classList.add('hidden');
+    }
+  }
+
+  // Export CSV Button in Reports
+  const reportExportBtn = document.getElementById('btn-export-csv');
+  const lockMsg = document.getElementById('export-csv-lock-msg');
+  
+  if (reportExportBtn) {
+    if (allDone) {
+      reportExportBtn.classList.remove('hidden');
+      if (lockMsg) lockMsg.classList.add('hidden');
+    } else {
+      reportExportBtn.classList.add('hidden');
+      if (lockMsg) {
+        lockMsg.classList.remove('hidden');
+        lockMsg.innerHTML = `<i data-lucide="lock" style="width: 1rem; height: 1rem; display: inline-block; vertical-align: middle; margin-right: 0.25rem; color: var(--color-wait);"></i> Exportação de CSV liberada após avaliar todas as ideias (Restam ${pendingCount} pendentes).`;
+        lucide.createIcons();
+      }
+    }
+  }
+}
+
+function checkAllCategorized() {
+  if (completionShown) return;
+  if (!areAllCategorized()) return;
+  
+  completionShown = true;
+  showCompletionOverlay();
+}
+
+function showCompletionOverlay() {
+  const overlay = document.getElementById('completion-overlay');
+  if (!overlay) return;
+  
+  // Count summary stats for overlay
+  let selected = 0, wait = 0, rejected = 0;
+  csvData.forEach(item => {
+    const key = getIdeaKey(item);
+    const status = evaluations[key]?.status;
+    if (status === 'selecionada') selected++;
+    else if (status === 'espera') wait++;
+    else if (status === 'desclassificada') rejected++;
+  });
+  
+  document.getElementById('completion-stat-selected').textContent = selected;
+  document.getElementById('completion-stat-wait').textContent = wait;
+  document.getElementById('completion-stat-rejected').textContent = rejected;
+  document.getElementById('completion-stat-total').textContent = csvData.length;
+  
+  overlay.classList.add('open');
+  lucide.createIcons();
+}
+
+function closeCompletionOverlay() {
+  const overlay = document.getElementById('completion-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
 // Filter and Sort Engine
 function applyFilters() {
   const searchVal = document.getElementById('filter-search').value.toLowerCase();
@@ -1287,10 +1462,10 @@ function applyFilters() {
     if (activeView === 'saved' && evaluations[key]?.saved !== true) return false;
 
     // Sector filter
-    if (sectorVal !== 'all' && item.row[COL_SECTOR] !== sectorVal) return false;
+    if (sectorVal !== 'all' && item.row[colSector()] !== sectorVal) return false;
     
     // Stage filter
-    if (stageVal !== 'all' && item.row[COL_STAGE] !== stageVal) return false;
+    if (stageVal !== 'all' && item.row[colStage()] !== stageVal) return false;
     
     // Status filter
     const status = evaluations[key]?.status;
@@ -1301,10 +1476,10 @@ function applyFilters() {
 
     // Search filter
     if (searchVal) {
-      const name = (item.row[COL_NAME] || '').toLowerCase();
-      const solution = (item.row[COL_SOLUTION] || '').toLowerCase();
-      const exp = (item.row[COL_EXP] || '').toLowerCase();
-      const motivation = (item.row[COL_MOTIVATION] || '').toLowerCase();
+      const name = (item.row[colName()] || '').toLowerCase();
+      const solution = (item.row[colSolution()] || '').toLowerCase();
+      const exp = (item.row[colExp()] || '').toLowerCase();
+      const motivation = (item.row[colMotivation()] || '').toLowerCase();
       
       const matches = name.includes(searchVal) || 
                       solution.includes(searchVal) || 
@@ -1321,12 +1496,12 @@ function applyFilters() {
     if (sortVal === 'index-asc') {
       return a.originalIndex - b.originalIndex;
     } else if (sortVal === 'name-asc') {
-      const nameA = (a.row[COL_NAME] || '').trim().toLowerCase();
-      const nameB = (b.row[COL_NAME] || '').trim().toLowerCase();
+      const nameA = (a.row[colName()] || '').trim().toLowerCase();
+      const nameB = (b.row[colName()] || '').trim().toLowerCase();
       return nameA.localeCompare(nameB);
     } else if (sortVal === 'sector-asc') {
-      const secA = (a.row[COL_SECTOR] || '').trim().toLowerCase();
-      const secB = (b.row[COL_SECTOR] || '').trim().toLowerCase();
+      const secA = (a.row[colSector()] || '').trim().toLowerCase();
+      const secB = (b.row[colSector()] || '').trim().toLowerCase();
       return secA.localeCompare(secB);
     } else if (sortVal === 'status-asc') {
       const keyA = getIdeaKey(a);
@@ -1363,11 +1538,29 @@ function getStatusBadgeHTML(status) {
 }
 
 function getStartupDisplayName(item) {
-  const name = item.row[COL_NAME];
+  const name = item.row[colName()];
   if (name && name.trim()) {
     return name.trim();
   }
   return `Startup Sem Nome #${item.originalIndex}`;
+}
+
+function getFounderDisplayName(item) {
+  const idx = colFounder();
+  if (idx < 0) return '';
+  const founder = item.row[idx];
+  if (!founder || !founder.trim()) return '';
+  // Capitalize each word properly
+  return founder.trim().split(/\s+/).map(word => {
+    if (word.length <= 2) return word.toLowerCase(); // prepositions like 'de', 'da'
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+function getFounderHTML(item) {
+  const founder = getFounderDisplayName(item);
+  if (!founder) return '';
+  return `<span class="founder-name"><i data-lucide="user" style="width: 0.8rem; height: 0.8rem;"></i> ${founder}</span>`;
 }
 
 // Render VIEW 1: Dashboard Grid
@@ -1408,21 +1601,17 @@ function renderDashboardGrid() {
           <span class="card-index">Linha #${item.originalIndex}</span>
         </div>
         <div class="card-badges">
-          <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
-          <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
+          <span class="badge badge-sector">${item.row[colSector()] || 'Outra'}</span>
+          <span class="badge badge-stage">${item.row[colStage()] || 'Ideação'}</span>
           ${getStatusBadgeHTML(status)}
         </div>
       </div>
       
       <h3>${getStartupDisplayName(item)}</h3>
-      <p class="card-solution-preview">${item.row[COL_SOLUTION] || '(Sem descrição da solução)'}</p>
+      ${getFounderHTML(item)}
+      <p class="card-solution-preview">${item.row[colSolution()] || '(Sem descrição da solução)'}</p>
       
       <div class="card-footer">
-        <div class="card-experience" title="${item.row[COL_EXP]}">
-          <i data-lucide="user" style="width: 0.75rem; height: 0.75rem; flex-shrink: 0;"></i>
-          <span>${item.row[COL_EXP] || 'Sem histórico'}</span>
-        </div>
-        
         <div class="card-comment-indicator ${hasComment ? '' : 'hidden'}">
           <i data-lucide="message-square" style="width: 0.8rem; height: 0.8rem;"></i>
           <span>Anotado</span>
@@ -1488,21 +1677,17 @@ function renderSavedIdeasGrid() {
           <span class="card-index">Linha #${item.originalIndex}</span>
         </div>
         <div class="card-badges">
-          <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
-          <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
+          <span class="badge badge-sector">${item.row[colSector()] || 'Outra'}</span>
+          <span class="badge badge-stage">${item.row[colStage()] || 'Ideação'}</span>
           ${getStatusBadgeHTML(status)}
         </div>
       </div>
       
       <h3>${getStartupDisplayName(item)}</h3>
-      <p class="card-solution-preview">${item.row[COL_SOLUTION] || '(Sem descrição da solução)'}</p>
+      ${getFounderHTML(item)}
+      <p class="card-solution-preview">${item.row[colSolution()] || '(Sem descrição da solução)'}</p>
       
       <div class="card-footer">
-        <div class="card-experience" title="${item.row[COL_EXP]}">
-          <i data-lucide="user" style="width: 0.75rem; height: 0.75rem; flex-shrink: 0;"></i>
-          <span>${item.row[COL_EXP] || 'Sem histórico'}</span>
-        </div>
-        
         <div class="card-comment-indicator ${hasComment ? '' : 'hidden'}">
           <i data-lucide="message-square" style="width: 0.8rem; height: 0.8rem;"></i>
           <span>Anotado</span>
@@ -1565,9 +1750,10 @@ function renderContinuousList() {
               <i data-lucide="bookmark" style="width: 1.25rem; height: 1.25rem;"></i>
             </button>
           </h3>
+          ${getFounderHTML(item)}
           <div class="card-badges">
-            <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
-            <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
+            <span class="badge badge-sector">${item.row[colSector()] || 'Outra'}</span>
+            <span class="badge badge-stage">${item.row[colStage()] || 'Ideação'}</span>
             <span class="badge badge-stage">Linha #${item.originalIndex}</span>
           </div>
         </div>
@@ -1581,24 +1767,24 @@ function renderContinuousList() {
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
           <div class="info-section">
             <h4><i data-lucide="lightbulb" style="width: 1rem; height: 1rem;"></i> Proposta / Ideia de Solução</h4>
-            <p>${item.row[COL_SOLUTION] || '(Nenhuma descrição fornecida)'}</p>
+            <p>${item.row[colSolution()] || '(Nenhuma descrição fornecida)'}</p>
           </div>
           <div class="info-section">
             <h4><i data-lucide="star" style="width: 1rem; height: 1rem;"></i> Por que fazer parte do Mete Marcha?</h4>
-            <p>${item.row[COL_MOTIVATION] || '(Nenhuma justificativa fornecida)'}</p>
+            <p>${item.row[colMotivation()] || '(Nenhuma justificativa fornecida)'}</p>
           </div>
           <div class="info-section">
             <h4><i data-lucide="trending-up" style="width: 1rem; height: 1rem;"></i> Fase da Startup</h4>
-            <p>${item.row[COL_STAGE] || 'Não informada'}</p>
+            <p>${item.row[colStage()] || 'Não informada'}</p>
           </div>
           <div class="info-section">
             <h4><i data-lucide="briefcase" style="width: 1rem; height: 1rem;"></i> Experiência Empreendedora</h4>
-            <p>${item.row[COL_EXP] || 'Sem histórico do fundador'}</p>
+            <p>${item.row[colExp()] || 'Sem histórico do fundador'}</p>
           </div>
-          ${item.row[COL_SUGGESTIONS] ? `
+          ${item.row[colSuggestions()] ? `
             <div class="info-section">
               <h4><i data-lucide="help-circle" style="width: 1rem; height: 1rem;"></i> Dúvidas ou Sugestões</h4>
-              <p>${item.row[COL_SUGGESTIONS]}</p>
+              <p>${item.row[colSuggestions()]}</p>
             </div>
           ` : ''}
         </div>
@@ -1716,10 +1902,11 @@ function renderReaderView() {
               <i data-lucide="bookmark" style="width: 1.4rem; height: 1.4rem;"></i>
             </button>
           </h2>
+          ${getFounderHTML(item)}
         </div>
         <div class="card-badges">
-          <span class="badge badge-sector" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">${item.row[COL_SECTOR] || 'Outra'}</span>
-          <span class="badge badge-stage" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">${item.row[COL_STAGE] || 'Ideação'}</span>
+          <span class="badge badge-sector" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">${item.row[colSector()] || 'Outra'}</span>
+          <span class="badge badge-stage" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">${item.row[colStage()] || 'Ideação'}</span>
           ${getStatusBadgeHTML(status)}
         </div>
       </div>
@@ -1727,26 +1914,26 @@ function renderReaderView() {
       <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
         <div class="info-section">
           <h4 style="font-size: 0.95rem;"><i data-lucide="lightbulb" style="width: 1.1rem; height: 1.1rem;"></i> Proposta / Ideia de Solução</h4>
-          <p style="font-size: 1.05rem; line-height: 1.7;">${item.row[COL_SOLUTION] || '(Sem descrição da ideia)'}</p>
+          <p style="font-size: 1.05rem; line-height: 1.7;">${item.row[colSolution()] || '(Sem descrição da ideia)'}</p>
         </div>
         
         <div class="info-section">
           <h4 style="font-size: 0.95rem;"><i data-lucide="star" style="width: 1.1rem; height: 1.1rem;"></i> Por que deve fazer parte do Mete Marcha?</h4>
-          <p style="font-size: 1.05rem; line-height: 1.7;">${item.row[COL_MOTIVATION] || '(Sem justificativa fornecida)'}</p>
+          <p style="font-size: 1.05rem; line-height: 1.7;">${item.row[colMotivation()] || '(Sem justificativa fornecida)'}</p>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
           <div class="info-section">
             <h4><i data-lucide="trending-up" style="width: 1rem; height: 1rem;"></i> Fase da Startup</h4>
-            <p style="font-size: 0.9rem;">${item.row[COL_STAGE] || 'Não informada.'}</p>
+            <p style="font-size: 0.9rem;">${item.row[colStage()] || 'Não informada.'}</p>
           </div>
           <div class="info-section">
             <h4><i data-lucide="briefcase" style="width: 1rem; height: 1rem;"></i> Experiência Empreendedora</h4>
-            <p style="font-size: 0.9rem;">${item.row[COL_EXP] || 'Sem histórico anterior.'}</p>
+            <p style="font-size: 0.9rem;">${item.row[colExp()] || 'Sem histórico anterior.'}</p>
           </div>
           <div class="info-section">
             <h4><i data-lucide="help-circle" style="width: 1rem; height: 1rem;"></i> Dúvidas ou Sugestões</h4>
-            <p style="font-size: 0.9rem;">${item.row[COL_SUGGESTIONS] || 'Sem observações.'}</p>
+            <p style="font-size: 0.9rem;">${item.row[colSuggestions()] || 'Sem observações.'}</p>
           </div>
         </div>
       </div>
@@ -1834,7 +2021,7 @@ function renderReportsView() {
   // 2. Sectors breakdown
   const sectorsMap = {};
   csvData.forEach(item => {
-    const sector = item.row[COL_SECTOR] || 'Outra';
+    const sector = item.row[colSector()] || 'Outra';
     sectorsMap[sector] = (sectorsMap[sector] || 0) + 1;
   });
 
@@ -1860,7 +2047,7 @@ function renderReportsView() {
   // 3. Stages breakdown
   const stagesMap = {};
   csvData.forEach(item => {
-    const stage = item.row[COL_STAGE] || 'Ideação';
+    const stage = item.row[colStage()] || 'Ideação';
     stagesMap[stage] = (stagesMap[stage] || 0) + 1;
   });
 
@@ -1894,10 +2081,14 @@ function openDetailModal(item) {
   const comment = evalState?.comments || '';
 
   document.getElementById('modal-title').textContent = getStartupDisplayName(item);
-  document.getElementById('modal-solution').textContent = item.row[COL_SOLUTION] || '(Sem descrição)';
-  document.getElementById('modal-motivation').textContent = item.row[COL_MOTIVATION] || '(Sem descrição)';
-  document.getElementById('modal-stage').textContent = item.row[COL_STAGE] || '(Sem fase informada)';
-  document.getElementById('modal-experience').textContent = item.row[COL_EXP] || '(Sem descrição)';
+  const modalFounder = document.getElementById('modal-founder-container');
+  if (modalFounder) {
+    modalFounder.innerHTML = getFounderHTML(item);
+  }
+  document.getElementById('modal-solution').textContent = item.row[colSolution()] || '(Sem descrição)';
+  document.getElementById('modal-motivation').textContent = item.row[colMotivation()] || '(Sem descrição)';
+  document.getElementById('modal-stage').textContent = item.row[colStage()] || '(Sem fase informada)';
+  document.getElementById('modal-experience').textContent = item.row[colExp()] || '(Sem descrição)';
   
   const isSaved = evalState?.saved === true;
   const modalSaveBtn = document.getElementById('modal-save-btn');
@@ -1905,7 +2096,7 @@ function openDetailModal(item) {
     modalSaveBtn.className = `btn-save-bookmark ${isSaved ? 'is-saved' : ''}`;
   }
 
-  const suggestions = item.row[COL_SUGGESTIONS];
+  const suggestions = item.row[colSuggestions()];
   const suggSection = document.getElementById('modal-suggestions-section');
   if (suggestions && suggestions.trim()) {
     suggSection.classList.remove('hidden');
@@ -1917,8 +2108,8 @@ function openDetailModal(item) {
   // Badges
   const badgesContainer = document.getElementById('modal-badges');
   badgesContainer.innerHTML = `
-    <span class="badge badge-sector">${item.row[COL_SECTOR] || 'Outra'}</span>
-    <span class="badge badge-stage">${item.row[COL_STAGE] || 'Ideação'}</span>
+    <span class="badge badge-sector">${item.row[colSector()] || 'Outra'}</span>
+    <span class="badge badge-stage">${item.row[colStage()] || 'Ideação'}</span>
     <span class="badge badge-stage">Linha #${item.originalIndex}</span>
     <span id="modal-status-badge">${getStatusBadgeHTML(status)}</span>
   `;
@@ -2250,6 +2441,16 @@ dropZone.addEventListener('drop', (e) => {
 document.getElementById('btn-export-csv').addEventListener('click', exportToCSV);
 document.getElementById('global-export-btn').addEventListener('click', exportToCSV);
 document.getElementById('btn-export-json').addEventListener('click', exportToJSON);
+
+// Hook completion overlay actions
+document.getElementById('completion-export-btn')?.addEventListener('click', () => {
+  exportToCSV();
+  closeCompletionOverlay();
+});
+document.getElementById('completion-review-btn')?.addEventListener('click', () => {
+  closeCompletionOverlay();
+  showView('continuous');
+});
 
 // Import backup json
 const jsonImportInput = document.getElementById('json-import-input');

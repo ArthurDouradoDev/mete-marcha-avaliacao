@@ -561,6 +561,22 @@ button, input, select, textarea {
   overflow: hidden;
 }
 
+.founder-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.founder-name i {
+  color: var(--color-primary);
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .card-footer {
   border-top: 1px solid var(--border-color);
   padding-top: 0.75rem;
@@ -1516,3 +1532,122 @@ button, input, select, textarea {
 #modal-save-btn {
   margin-left: 0.25rem;
 }
+
+/* Completion Overlay Styles */
+.completion-container {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 2rem;
+  padding: 3rem 2.5rem;
+  max-width: 650px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.95);
+  transition: transform var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  position: relative;
+  background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 60%),
+                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.03), transparent 60%);
+}
+
+.modal-overlay.open .completion-container {
+  transform: scale(1);
+}
+
+.completion-header h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.completion-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.completion-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .completion-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.comp-stat-card {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: transform 0.2s ease;
+}
+
+.comp-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.comp-stat-card .stat-number {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.comp-stat-card .stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.comp-stat-card.card-selecionada { border-color: rgba(16, 185, 129, 0.3); }
+.comp-stat-card.card-selecionada .stat-number { color: var(--color-selected); }
+
+.comp-stat-card.card-espera { border-color: rgba(245, 158, 11, 0.3); }
+.comp-stat-card.card-espera .stat-number { color: var(--color-wait); }
+
+.comp-stat-card.card-desclassificada { border-color: rgba(239, 68, 68, 0.3); }
+.comp-stat-card.card-desclassificada .stat-number { color: var(--color-rejected); }
+
+.comp-stat-card.card-total { border-color: rgba(99, 102, 241, 0.3); }
+.comp-stat-card.card-total .stat-number { color: var(--color-primary); }
+
+.completion-prompt p {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
+}
+
+.completion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+}
+
+@media (min-width: 480px) {
+  .completion-actions {
+    flex-direction: row;
+  }
+}
+
+.action-btn.btn-large {
+  padding: 0.85rem 1.75rem;
+  font-size: 1rem;
+  border-radius: 0.75rem;
+  justify-content: center;
+}
+

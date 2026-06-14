@@ -348,6 +348,8 @@
                 <button class="action-btn" id="btn-export-json">
                   <i data-lucide="file-code"></i> Exportar JSON Backup
                 </button>
+                
+                <div id="export-csv-lock-msg" class="hidden" style="margin-top: 0.5rem; font-size: 0.85rem; width: 100%;"></div>
               </div>
               
               <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
@@ -383,6 +385,7 @@
               <i data-lucide="bookmark" style="width: 1.4rem; height: 1.4rem;"></i>
             </button>
           </div>
+          <div id="modal-founder-container" style="margin-top: 0.25rem;"></div>
         </div>
         <button class="modal-close" id="modal-close-btn">
           <i data-lucide="x" style="width: 1.5rem; height: 1.5rem;"></i>
@@ -445,6 +448,48 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETION OVERLAY (FULL SCREEN) -->
+  <div class="modal-overlay" id="completion-overlay">
+    <div class="completion-container">
+      <div class="completion-header">
+        <i data-lucide="party-popper" class="party-icon" style="width: 3.5rem; height: 3.5rem; color: var(--color-selected); margin-bottom: 1rem;"></i>
+        <h2>Todas as ideias foram avaliadas! 🎉</h2>
+        <p>Você categorizou com sucesso todas as propostas do Mete Marcha 2026.</p>
+      </div>
+
+      <div class="completion-stats">
+        <div class="comp-stat-card card-selecionada">
+          <span class="stat-number" id="completion-stat-selected">0</span>
+          <span class="stat-label">Selecionadas</span>
+        </div>
+        <div class="comp-stat-card card-espera">
+          <span class="stat-number" id="completion-stat-wait">0</span>
+          <span class="stat-label">Em Espera</span>
+        </div>
+        <div class="comp-stat-card card-desclassificada">
+          <span class="stat-number" id="completion-stat-rejected">0</span>
+          <span class="stat-label">Desclassificadas</span>
+        </div>
+        <div class="comp-stat-card card-total">
+          <span class="stat-number" id="completion-stat-total">0</span>
+          <span class="stat-label">Total Avaliado</span>
+        </div>
+      </div>
+
+      <div class="completion-prompt">
+        <p>O que deseja fazer agora?</p>
+        <div class="completion-actions">
+          <button class="action-btn btn-primary btn-large" id="completion-export-btn">
+            <i data-lucide="download"></i> Exportar Planilha (CSV)
+          </button>
+          <button class="action-btn btn-large" id="completion-review-btn">
+            <i data-lucide="rotate-ccw"></i> Revisar / Lista Contínua
+          </button>
+        </div>
       </div>
     </div>
   </div>
